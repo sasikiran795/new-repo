@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aurelius | AI Auctioneer & Luxury Bidding Assistant</title>
+  <meta name="description" content="Experience high-stakes live luxury auctions powered by Aurelius, the AI Auctioneer and Valuation Concierge. Place real-time bids, set auto-proxy bidding, and get instant appraisal insights.">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="theme-luxury">
+  <div id="app" class="app-container">
+    
+    <!-- Top Global Header -->
+    <header class="luxury-header" id="mainHeader">
+      <div class="header-brand">
+        <div class="brand-crest">
+          <svg class="crest-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M14 10l6.5-6.5a1.5 1.5 0 00-2.12-2.12L11.88 7.88"></path>
+            <path d="M3 21l8.5-8.5"></path>
+            <path d="M9 15l-3 3a1.5 1.5 0 01-2.12-2.12l3-3"></path>
+            <path d="M8.5 7.5l8 8"></path>
+            <path d="M13 3l8 8"></path>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1 class="brand-title">AURELIUS</h1>
+          <span class="brand-subtitle">AI AUCTIONEER & LUXURY SALON</span>
+        </div>
+      </div>
+
+      <!-- Live Auction Session Badge -->
+      <div class="live-status-pill" id="liveStatusPill">
+        <span class="status-pulse"></span>
+        <span class="status-text">SESSION IV • LIVE FLOOR</span>
+        <span class="viewers-count"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> 1,428 Bidders</span>
+      </div>
+
+      <!-- User Paddle & Balance Widget -->
+      <div class="header-user-actions">
+        <div class="user-paddle-badge" title="Your Official Auction Paddle">
+          <span class="paddle-lbl">PADDLE</span>
+          <span class="paddle-num">#77</span>
+        </div>
+
+        <div class="user-wallet-card" id="userWalletCard">
+          <div class="wallet-icon">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+              <line x1="2" y1="10" x2="22" y2="10"></line>
+            </svg>
+          </div>
+          <div class="wallet-info">
+            <span class="wallet-lbl">CREDIT LINE</span>
+            <span class="wallet-amt" id="userBalanceDisplay">$250,000</span>
+          </div>
+          <button class="wallet-add-btn" id="addFundsBtn" title="Deposit Test Funds" aria-label="Deposit Funds">+</button>
+        </div>
+
+        <!-- Controls: Sound & Voice -->
+        <div class="header-toggles">
+          <button class="icon-toggle-btn active" id="sfxToggleBtn" title="Toggle Sound FX (Gavel, Bids)" aria-label="Toggle Sound Effects">
+            <svg class="sound-on-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            </svg>
+          </button>
+          <button class="icon-toggle-btn active" id="ttsToggleBtn" title="Toggle AI Auctioneer Voice (Speech Synthesis)" aria-label="Toggle AI Voice">
+            <svg class="mic-on-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              <line x1="12" y1="19" x2="12" y2="23"></line>
+              <line x1="8" y1="23" x2="16" y2="23"></line>
+            </svg>
+          </button>
+          <button class="icon-toggle-btn" id="wonLotsBtn" title="View Won Lots" aria-label="View Won Lots">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="8" r="7"></circle>
+              <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+            </svg>
+            <span class="badge-count" id="wonLotsCount">0</span>
+          </button>
+          <!-- API & Cloud Database Settings Button -->
+          <button class="icon-toggle-btn settings-btn" id="settingsToggleBtn" title="Connect Gemini API & Supabase Database" aria-label="Cloud & API Settings">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Live Cloud Connection Pills -->
+        <div class="cloud-status-pills">
+          <button class="cloud-pill" id="geminiPillBtn" title="Gemini API Status (Click to configure)">
+            <span class="pill-dot offline" id="geminiDot"></span>
+            <span class="pill-txt" id="geminiTxt">Gemini</span>
+          </button>
+          <button class="cloud-pill" id="supabasePillBtn" title="Supabase Database Status (Click to configure)">
+            <span class="pill-dot offline" id="supabaseDot"></span>
+            <span class="pill-txt" id="supabaseTxt">Supabase</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Dynamic Content Workspace -->
+    <main class="auction-workspace">
+      
+      <!-- LEFT SECTION: Live Auction Stage & Lot Showcase -->
+      <section class="auction-stage-panel" id="auctionStagePanel">
+        
+        <!-- Lot Selection Navigation Strip -->
+        <nav class="lots-navigation-bar" aria-label="Auction Lots Navigation">
+          <div class="lots-nav-label">CATALOG LOTS:</div>
+          <div class="lots-carousel" id="lotsCarousel">
+            <!-- Dynamic Lot tabs injected by JS -->
+          </div>
+        </nav>
+
+        <!-- Current Lot Main Stage -->
+        <div class="lot-stage-card" id="lotStageCard">
+          
+          <!-- Image & Visual Showcase -->
+          <div class="lot-media-container">
+            <div class="lot-tag-badge" id="lotCategoryBadge">HOROLOGY & TIMEPIECES</div>
+            <div class="lot-id-badge" id="lotNumberBadge">LOT #101</div>
+            
+            <div class="lot-image-wrapper">
+              <img id="lotMainImage" src="assets/img/watch.jpg" alt="Active Auction Lot Image" class="lot-image">
+              <div class="image-gradient-overlay"></div>
+            </div>
+
+            <!-- Floating Quick Specs -->
+            <div class="lot-specs-overlay">
+              <div class="spec-pill">
+                <span class="spec-title">ESTIMATE</span>
+                <span class="spec-val" id="lotEstimateDisplay">$45,000 - $65,000</span>
+              </div>
+              <div class="spec-pill">
+                <span class="spec-title">RESERVE</span>
+                <span class="spec-val status-met" id="lotReserveStatus">MET ✓</span>
+              </div>
+              <div class="spec-pill">
+                <span class="spec-title">AUTHENTICITY</span>
+                <span class="spec-val text-gold">100% VERIFIED</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lot Details & Live Bidding Cockpit -->
+          <div class="lot-control-center">
+            
+            <div class="lot-header-info">
+              <h2 class="lot-title" id="lotTitle">1968 Patek Philippe Celestial Tourbillon Chronograph</h2>
+              <p class="lot-provenance" id="lotProvenance">Geneva Private Collection • 18K Rose Gold • Obsidian Dial • Mint Condition</p>
+            </div>
+
+            <!-- Dynamic Live Bid Board -->
+            <div class="bidding-dashboard-grid">
+              
+              <!-- Current Bid Metric -->
+              <div class="metric-card current-bid-card">
+                <div class="metric-header">
+                  <span class="metric-lbl">CURRENT HIGH BID</span>
+                  <span class="metric-trend" id="bidsCountBadge">18 Bids Placed</span>
+                </div>
+                <div class="current-price-row">
+                  <span class="currency-symbol">$</span>
+                  <span class="price-digits" id="currentBidPrice">52,000</span>
+                  <span class="currency-code">USD</span>
+                </div>
+                <div class="high-bidder-lead" id="highBidderBanner">
+                  <span class="bidder-avatar">🏛️</span>
+                  <span class="bidder-name" id="highBidderName">Elena Rostova (Monaco) • Paddle #12</span>
+                </div>
+              </div>
+
+              <!-- Live Countdown Clock -->
+              <div class="metric-card countdown-card" id="countdownCard">
+                <div class="metric-header">
+                  <span class="metric-lbl">TIME REMAINING</span>
+                  <span class="gavel-stage" id="gavelStageText">FAIR WARNING</span>
+                </div>
+                <div class="countdown-display">
+                  <div class="countdown-radial-wrap">
+                    <svg class="countdown-radial-svg" viewBox="0 0 100 100">
+                      <circle class="radial-track" cx="50" cy="50" r="42"></circle>
+                      <circle class="radial-progress" id="timerProgressCircle" cx="50" cy="50" r="42" stroke-dasharray="264" stroke-dashoffset="0"></circle>
+                    </svg>
+                    <div class="countdown-numbers">
+                      <span class="seconds-val" id="countdownSeconds">28</span>
+                      <span class="seconds-lbl">SEC</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="hammer-indicator" id="hammerIndicator">
+                  <span class="hammer-icon">🔨</span>
+                  <span class="hammer-status" id="hammerStatusNotice">Bidding Open</span>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Fast Interactive Bidding Console -->
+            <div class="bidding-action-cockpit">
+              
+              <!-- Quick Bid Button -->
+              <button class="bid-action-btn primary-bid-btn" id="quickBidBtn">
+                <div class="btn-shine"></div>
+                <span class="btn-icon">⚡</span>
+                <span class="btn-text">
+                  <span class="bid-label">PLACE NEXT BID</span>
+                  <span class="bid-amount" id="quickBidAmount">$55,000</span>
+                </span>
+                <span class="increment-tag" id="incrementTag">+ $3,000 Increment</span>
+              </button>
+
+              <!-- Custom Bid Section -->
+              <div class="custom-bid-group">
+                <div class="custom-input-wrap">
+                  <span class="input-dollar">$</span>
+                  <input type="number" id="customBidInput" class="custom-bid-input" placeholder="Custom Bid" step="1000" min="55000">
+                </div>
+                <button class="custom-bid-submit-btn" id="customBidBtn">
+                  <span>Submit Custom Bid</span>
+                </button>
+              </div>
+
+              <!-- Auto-Proxy Bidding Widget -->
+              <div class="auto-proxy-bar" id="autoProxyBar">
+                <div class="auto-proxy-info">
+                  <span class="proxy-icon">🤖</span>
+                  <div class="proxy-text">
+                    <span class="proxy-title">AI Auto-Bid Agent</span>
+                    <span class="proxy-status" id="proxyStatusText">Inactive (Max Limit: None)</span>
+                  </div>
+                </div>
+                <div class="proxy-controls">
+                  <input type="number" id="proxyMaxInput" class="proxy-max-input" placeholder="Max Limit ($)" step="5000">
+                  <button class="proxy-toggle-btn" id="proxyToggleBtn">Enable Auto-Bid</button>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Bottom Tabs: Floor Activity & Lot Appraisal Details -->
+            <div class="lot-supplementary-tabs">
+              <div class="tab-headers">
+                <button class="sub-tab-btn active" data-tab="liveStreamTab">Live Floor Feed (<span id="feedCount">6</span>)</button>
+                <button class="sub-tab-btn" data-tab="provenanceTab">Curator & Provenance Report</button>
+                <button class="sub-tab-btn" data-tab="rulesTab">Auction Terms & Fees</button>
+              </div>
+
+              <!-- Tab 1: Live Feed -->
+              <div class="tab-content active" id="liveStreamTab">
+                <div class="live-bids-feed-list" id="liveBidsFeedList">
+                  <!-- Live bids ticker items -->
+                </div>
+              </div>
+
+              <!-- Tab 2: Provenance & Valuation -->
+              <div class="tab-content" id="provenanceTab">
+                <div class="provenance-report-card" id="provenanceReportCard">
+                  <!-- Injected by active lot data -->
+                </div>
+              </div>
+
+              <!-- Tab 3: Rules & Fees -->
+              <div class="tab-content" id="rulesTab">
+                <div class="rules-info-grid">
+                  <div class="rule-item">
+                    <h4>Buyer's Premium</h4>
+                    <p>Standard 12% premium added to the final hammer price upon close.</p>
+                  </div>
+                  <div class="rule-item">
+                    <h4>Proxy Bidding</h4>
+                    <p>Aurelius AI automatically bids in minimum increments up to your declared ceiling.</p>
+                  </div>
+                  <div class="rule-item">
+                    <h4>Soft-Close Sniping Protection</h4>
+                    <p>Bids received with under 15 seconds remaining extend the clock by +15 seconds.</p>
+                  </div>
+                  <div class="rule-item">
+                    <h4>Custody & Insurance</h4>
+                    <p>White-glove vaulted armored transport included for all lots over $50,000.</p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+
+      </section>
+
+      <!-- RIGHT SECTION: Aurelius AI Chatbot Assistant -->
+      <section class="chatbot-companion-panel" id="chatbotPanel">
+        
+        <!-- Chatbot Header -->
+        <div class="chatbot-header">
+          <div class="bot-profile">
+            <div class="bot-avatar-container">
+              <img src="assets/img/avatar.jpg" alt="Aurelius AI Avatar" class="bot-avatar-img">
+              <span class="bot-online-indicator" title="Online & Analyzing Floor"></span>
+            </div>
+            <div class="bot-title-group">
+              <div class="bot-name-row">
+                <h3 class="bot-name">Aurelius</h3>
+                <span class="bot-tag">LUXE COPILOT</span>
+              </div>
+              <p class="bot-status-msg" id="botStatusActivity">Analyzing live market valuations...</p>
+            </div>
+          </div>
+
+          <!-- Bot Personality Switcher -->
+          <div class="bot-personality-selector">
+            <label for="personaSelect" class="sr-only">Bot Persona</label>
+            <select id="personaSelect" class="persona-dropdown" title="Select AI Persona">
+              <option value="auctioneer">🎩 Grand Auctioneer</option>
+              <option value="advisor">💼 Wealth & Art Advisor</option>
+              <option value="aggressive">⚡ Aggressive Floor Trader</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Bot Messages Scroll Container -->
+        <div class="chat-messages-container" id="chatMessagesContainer">
+          <!-- Chat messages dynamically rendered here -->
+        </div>
+
+        <!-- Quick Suggestion Action Chips -->
+        <div class="chat-suggestions-bar" id="chatSuggestionsBar">
+          <button class="suggestion-chip" data-action="quickBid">⚡ Place Next Bid ($55k)</button>
+          <button class="suggestion-chip" data-action="appraise">🔍 Appraise Lot #101</button>
+          <button class="suggestion-chip" data-action="strategy">🎯 Advise Bidding Strategy</button>
+          <button class="suggestion-chip" data-action="autobid">🤖 Set Auto-Bid to $75k</button>
+          <button class="suggestion-chip" data-action="compare">⚖️ Compare All Lots</button>
+        </div>
+
+        <!-- Chat Input Footer -->
+        <footer class="chat-input-footer">
+          <form id="chatForm" class="chat-form">
+            <button type="button" class="chat-voice-input-btn" id="voiceInputBtn" title="Speak to Aurelius (Voice Input)" aria-label="Voice Input">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+              </svg>
+            </button>
+            
+            <div class="chat-input-wrapper">
+              <input 
+                type="text" 
+                id="chatInput" 
+                class="chat-text-input" 
+                placeholder="Ask Aurelius or type 'bid $55k', 'appraise', 'strategy'..." 
+                autocomplete="off"
+              >
+            </div>
+
+            <button type="submit" class="chat-send-btn" id="chatSendBtn" aria-label="Send Message">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </form>
+          <div class="chat-footer-footnote">
+            Aurelius parses natural bidding commands and offers real-time valuation intelligence.
+          </div>
+        </footer>
+
+      </section>
+
+    </main>
+
+    <!-- Modal: Won Lots / Inventory -->
+    <div class="modal-backdrop" id="wonLotsModal" hidden>
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3 class="modal-title">🏆 Your Acquired Masterpieces</h3>
+          <button class="modal-close-btn" id="closeWonLotsBtn">&times;</button>
+        </div>
+        <div class="modal-body" id="wonLotsModalBody">
+          <!-- Injected dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Add Credit Funds -->
+    <div class="modal-backdrop" id="fundsModal" hidden>
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3 class="modal-title">💳 Deposit Auction Credit Line</h3>
+          <button class="modal-close-btn" id="closeFundsBtn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-desc">Simulate an instant wire transfer to increase your verified bidding line for this session.</p>
+          <div class="funds-preset-grid">
+            <button class="preset-fund-btn" data-amt="25000">+$25,000</button>
+            <button class="preset-fund-btn" data-amt="50000">+$50,000</button>
+            <button class="preset-fund-btn" data-amt="100000">+$100,000</button>
+            <button class="preset-fund-btn" data-amt="250000">+$250,000</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: API & Cloud Database Settings -->
+    <div class="modal-backdrop" id="settingsModal" hidden>
+      <div class="modal-dialog modal-dialog-lg">
+        <div class="modal-header">
+          <div class="modal-header-title-group">
+            <h3 class="modal-title">⚙️ Cloud Integrations & API Keys</h3>
+            <span class="modal-subtitle">Connect your Google Gemini AI and Supabase Database</span>
+          </div>
+          <button class="modal-close-btn" id="closeSettingsBtn">&times;</button>
+        </div>
+        <div class="modal-body">
+          
+          <!-- Tab Switcher for Settings -->
+          <div class="settings-tab-nav">
+            <button class="settings-nav-btn active" data-tab="geminiTab">
+              <span class="tab-icon">✦</span> Google Gemini AI
+            </button>
+            <button class="settings-nav-btn" data-tab="supabaseTab">
+              <span class="tab-icon">🗄️</span> Supabase Database
+            </button>
+          </div>
+
+          <!-- Section 1: Gemini AI Settings -->
+          <div class="settings-tab-pane active" id="geminiTab">
+            <div class="settings-card">
+              <div class="settings-card-header">
+                <div class="card-title-wrap">
+                  <h4>Google Generative AI (Gemini)</h4>
+                  <p>Empowers Aurelius with true conversational intelligence, real-time appraisals, and bidding strategy.</p>
+                </div>
+                <div class="integration-status-tag" id="geminiStatusTag">
+                  <span class="status-indicator-dot offline"></span>
+                  <span class="status-indicator-label">Not Configured</span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="geminiApiKeyInput">Gemini API Key</label>
+                <div class="input-with-action">
+                  <input type="password" id="geminiApiKeyInput" class="luxury-text-input" placeholder="AIzaSy..." autocomplete="off">
+                  <button type="button" class="input-action-btn" id="toggleGeminiKeyVis" title="Show/Hide Key">👁️</button>
+                </div>
+                <small class="form-hint">
+                  Get your free API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio</a>.
+                </small>
+              </div>
+
+              <div class="form-group">
+                <label for="geminiModelSelect">Gemini Model</label>
+                <select id="geminiModelSelect" class="luxury-select-input">
+                  <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fast, Recommended)</option>
+                  <option value="gemini-2.0-flash">Gemini 2.0 Flash (Next-Gen)</option>
+                  <option value="gemini-1.5-pro">Gemini 1.5 Pro (Deep Reasoning)</option>
+                </select>
+              </div>
+
+              <div class="settings-actions-row">
+                <button type="button" class="secondary-btn" id="testGeminiBtn">⚡ Test Gemini Connection</button>
+                <span class="test-feedback" id="geminiTestFeedback"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2: Supabase Settings -->
+          <div class="settings-tab-pane" id="supabaseTab">
+            <div class="settings-card">
+              <div class="settings-card-header">
+                <div class="card-title-wrap">
+                  <h4>Supabase PostgreSQL & Realtime</h4>
+                  <p>Persists auction lots, live bids, user credit lines, and chat history with instant multi-client sync.</p>
+                </div>
+                <div class="integration-status-tag" id="supabaseStatusTag">
+                  <span class="status-indicator-dot offline"></span>
+                  <span class="status-indicator-label">Not Configured</span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="supabaseUrlInput">Supabase Project URL</label>
+                <input type="url" id="supabaseUrlInput" class="luxury-text-input" placeholder="https://xyzproject.supabase.co" autocomplete="off">
+                <small class="form-hint">Found in Supabase Dashboard → Project Settings → API → Project URL.</small>
+              </div>
+
+              <div class="form-group">
+                <label for="supabaseAnonKeyInput">Supabase Anon / Public Key</label>
+                <div class="input-with-action">
+                  <input type="password" id="supabaseAnonKeyInput" class="luxury-text-input" placeholder="eyJhbGciOiJIUzI1NiIsIn..." autocomplete="off">
+                  <button type="button" class="input-action-btn" id="toggleSupabaseKeyVis" title="Show/Hide Key">👁️</button>
+                </div>
+                <small class="form-hint">Found in Supabase Dashboard → Project Settings → API → anon public API key.</small>
+              </div>
+
+              <div class="settings-actions-row">
+                <button type="button" class="secondary-btn" id="testSupabaseBtn">🔍 Test Supabase Connection</button>
+                <button type="button" class="secondary-btn" id="copySchemaBtn">📋 Copy SQL Schema</button>
+                <button type="button" class="secondary-btn" id="syncLotsToSupabaseBtn">📤 Sync Lots to Supabase</button>
+              </div>
+              <div class="test-feedback" id="supabaseTestFeedback"></div>
+            </div>
+          </div>
+
+          <!-- Global Modal Footer Controls -->
+          <div class="settings-modal-footer">
+            <button type="button" class="clear-config-btn" id="clearConfigBtn">Clear Stored Keys</button>
+            <div class="footer-primary-actions">
+              <button type="button" class="secondary-btn" id="cancelSettingsBtn">Close</button>
+              <button type="button" class="primary-gold-btn" id="saveSettingsBtn">Save & Apply Settings</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Victory Confetti Canvas -->
+    <canvas id="confettiCanvas" class="confetti-canvas"></canvas>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
